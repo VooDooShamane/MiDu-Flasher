@@ -417,7 +417,8 @@ if "%action%" == "Downgrade  " (
 		pause
 		@echo.
 		@echo Connect wires to Dashboard now, you have 40 seconds to do so...
-		bin\timeout.exe 40
+		set "Msleep=40"
+		call :MIDUSLEEP
 		
 		call :MIDUHEAD
 		call :MIDUMYDT
@@ -831,6 +832,17 @@ exit
 
 REM ------------------------MiDu---------------------------
 
+:MIDUSLEEP
+if not "%Msleep%" == "0" (
+@echo|set /p="."
+choice /d n /t 1 >NUL
+set /a Msleep-=1
+goto :MIDUSLEEP
+)
+goto :eof
+
+REM ------------------------MiDu---------------------------
+
 :MIDUSPOOF
 call :MIDUMYDT
 @echo %0 %mydate%_%mytime% >>MiDu.log
@@ -1058,7 +1070,7 @@ cls
 @echo  *                      powered by OpenOCD                               *
 @echo  *                      created by VooDooShamane                         *
 @echo  *                      support Rollerplausch.com                        *
-@echo  *                                                                v1.0.0 *
+@echo  *                                                                v1.0.1 *
 @echo  *************************************************************************
 @echo  -------------------------------------------------------------------------
 @echo  ^| Target=%device% ^| Action=%action% ^| Scooter=%UIscooter% ^| Chip=%UIchip% ^|
