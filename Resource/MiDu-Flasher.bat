@@ -631,7 +631,7 @@ if "%action%" == "Write Flash" (
 			call :OCDWRITE
 			@echo done
 			
-			set "OCDiofle=files/BLE/Bootloader/Bootloader_1s_Pro2.bin"
+			set "OCDiofle=files/BLE/Bootloader/Bootloader_1s_Pro2_Mi3.bin"
 			set "OCDsofst=0x0003D000"
 			@echo writing 1s^/Pro2 bootloader now
 			call :OCDINIT
@@ -661,7 +661,7 @@ if "%action%" == "Write Flash" (
 			call :OCDWRITE
 			@echo done	
 			
-			set "OCDiofle=files/BLE/Bootloader/Bootloader_1s_Pro2.bin"
+			set "OCDiofle=files/BLE/Bootloader/Bootloader_1s_Pro2_Mi3.bin"
 			set "OCDsofst=0x0003D000"
 			@echo writing 1s^/Pro2 bootloader now
 			call :OCDINIT
