@@ -1018,7 +1018,7 @@ cls
 @echo  *                      powered by OpenOCD                               *
 @echo  *                      created by VooDooShamane                         *
 @echo  *                      support Rollerplausch.com                        *
-@echo  *                                                                v1.0.1 *
+@echo  *                                                                v1.0.2 *
 @echo  *************************************************************************
 @echo  -------------------------------------------------------------------------
 @echo  ^| Target=%device% ^| Action=%action% ^| Scooter=%UIscooter% ^| Chip=%UIchip% ^|
