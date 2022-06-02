@@ -3,6 +3,28 @@ mode 78,45
 setlocal enabledelayedexpansion
 set "home=%~dp0"
 cd /d "%home%"
+set "action=           "
+set "UIscooter=    "
+set "device=          "
+set "UIchip=        "
+call :MIDUHEAD
+
+
+@echo test>WritePermTest
+if not exist WritePermTest (
+	color 4
+	@echo no Writing Permission in^:^!
+	@echo.
+	@echo  -"%home%"-
+	@echo.
+	@echo Please move MiDu-Flasher to C^:^\
+	@echo.
+	pause
+	exit
+	) else (
+	del WritePermTest	
+	)
+
 
 REM -------------------------------------------------------
 
@@ -509,6 +531,7 @@ if "%action%" == "Write Flash" (
 
 	
 	if "%OCDtrgt%" == "target/nrf51_S%Aspeed%.cfg" (
+	
 	
 		if "%chip%" == "N51822x" (
 		
@@ -1018,7 +1041,7 @@ cls
 @echo  *                      powered by OpenOCD                               *
 @echo  *                      created by VooDooShamane                         *
 @echo  *                      support Rollerplausch.com                        *
-@echo  *                                                                v1.0.2 *
+@echo  *                                                                v1.0.3 *
 @echo  *************************************************************************
 @echo  -------------------------------------------------------------------------
 @echo  ^| Target=%device% ^| Action=%action% ^| Scooter=%UIscooter% ^| Chip=%UIchip% ^|
