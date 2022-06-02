@@ -13,7 +13,7 @@ call :MIDUHEAD
 @echo test>WritePermTest
 if not exist WritePermTest (
 	color 4
-	@echo no Writing Permission in^:^!
+	@echo No writing permission in^:^!
 	@echo.
 	@echo  -"%home%"-
 	@echo.
@@ -24,7 +24,6 @@ if not exist WritePermTest (
 	) else (
 	del WritePermTest	
 	)
-
 
 REM -------------------------------------------------------
 
