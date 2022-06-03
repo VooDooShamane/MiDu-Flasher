@@ -3,6 +3,7 @@ mode 78,45
 setlocal enabledelayedexpansion
 set "home=%~dp0"
 cd /d "%home%"
+set "sfk=bin\sfk.exe"
 set "action=           "
 set "UIscooter=    "
 set "device=          "
@@ -13,9 +14,9 @@ call :MIDUHEAD
 @echo test>WritePermTest
 if not exist WritePermTest (
 	color 4
-	@echo No writing permission in^:^!
+	@echo No writing permission in^:
 	@echo.
-	@echo  -"%home%"-
+	@echo  - %home% -
 	@echo.
 	@echo Please move MiDu-Flasher to C^:^\
 	@echo.
@@ -24,6 +25,7 @@ if not exist WritePermTest (
 	) else (
 	del WritePermTest	
 	)
+
 
 REM -------------------------------------------------------
 
@@ -161,7 +163,7 @@ if "%ERRORLEVEL%" == "2" (
 		if not exist "files\BLE\App\!chip!\%scooter%\App.bin" (
 			call :MIDUHEAD
 			@echo no firmware file found
-			@echo N51802x chip ^(clone Dashboard^) requires a modified BLE firmware^!
+			@echo N51802x chip ^(clone Dashboard^) requires a modified BLE firmware^^!
 			@echo.
 			@echo put modified BLE firmware file here^:
 			@echo.
@@ -190,7 +192,7 @@ if "%ERRORLEVEL%" == "2" (
 			call :MIDUDOWN "https://files.scooterhacking.org/firmware/m365/BLE/blebootloader.hex" "files\BLE\Bootloader\Bootloader_m365_Pro.hex"
 			if not exist "files\BLE\Bootloader\Bootloader_m365_Pro.hex" (
 				@echo.
-				@echo ERROR^! could not download file
+				%sfk% tell [red]Error^^![def] could not download file
 				@echo.
 				pause
 				goto :MIDUSELCHI
@@ -212,7 +214,7 @@ if "%ERRORLEVEL%" == "2" (
 			call :MIDUDOWN "https://github.com/CamiAlfa/stlink_m365_BLE/blob/master/flashing/bootldr.bin?raw=true" "files\BLE\Bootloader\Bootloader_1s_Pro2.bin"
 			if not exist "files\BLE\Bootloader\Bootloader_1s_Pro2.bin" (
 				@echo.
-				@echo ERROR^! could not download file
+				%sfk% tell [red]Error^^![def] could not download file
 				@echo.
 				pause
 				goto :MIDUSELCHI
@@ -241,11 +243,13 @@ set "connected=false"
 set "writing=false"
 set /a "errors=0"
 set /a "Aspeed=1000"
+
+
 if "%chip%" == "N51822x" set "OCDtrgt=target/nrf51_S%Aspeed%.cfg"
 if "%chip%" == "N51802x" set "OCDtrgt=target/nrf51_S%Aspeed%.cfg"
 if "%chip%" == "STM32F1x" set "OCDtrgt=target/stm32f1x_S%Aspeed%.cfg"
 if "%chip%" == "GD32E1x" set "OCDtrgt=target/GD32E1x_S%Aspeed%.cfg"
-set "sfk=bin\sfk.exe"
+
 
 call :MIDUMYDT
 @echo MIDUMAIN %mydate%_%mytime% device=%device% action=%action% scooter=%scooter% chip=%chip% >>MiDu.log
@@ -263,22 +267,27 @@ if "%action%" == "Downgrade  " (
 			if "%scooter%" == "1s" (
 				set "appURL=https://files.scooterhacking.org/firmware/1s/BLE/BLE134.bin"
 				set "appref=ScooterHacking.org"
+				set "appmd5=35c96f1d83d97dc4bb842afcf030d8fe"
 			)
 			if "%scooter%" == "Pro2" (
 				set "appURL=https://files.scooterhacking.org/firmware/pro2/BLE/BLE134.bin"
 				set "appref=ScooterHacking.org"
+				set "appmd5=b3c9023a0c7d89fbad0bf3f0dcc3cc0f"
 			)
 			if "%scooter%" == "Mi3" (
 				set "appURL=https://files.scooterhacking.org/firmware/mi3/BLE/BLE152.bin"
 				set "appref=ScooterHacking.org"
+				set "appmd5=9650da1e091b8c438aea094c25648085"
 			)
 			if "%scooter%" == "m365" (
 				set "appURL=https://files.scooterhacking.org/firmware/m365/BLE/BLE129.bin"
 				set "appref=ScooterHacking.org"
+				set "appmd5=f5aade9096ac0a2c99dae79a4849aa98"
 			)
 			if "%scooter%" == "Pro" (
 				set "appURL=https://files.scooterhacking.org/firmware/pro/BLE/BLE122.bin"
 				set "appref=ScooterHacking.org"
+				set "appmd5=e8880676338e0a94cb8fb5f65b629d61"
 			)
 				
 			@echo No BLE firmware file found
@@ -292,41 +301,55 @@ if "%action%" == "Downgrade  " (
 				call :MIDUDOWN "!appURL!" "files\BLE\App\%chip%\%scooter%\App.bin"
 				if not exist "files\BLE\App\%chip%\%scooter%\App.bin" (
 					@echo.
-					@echo ERROR^! could not download file
+					%sfk% tell [red]Error^^![def] could not download file
 					@echo.
 					pause
 					goto :MIDUSELCHI
 				)
+				@echo verifying md5sum
+				for /f %%m in ('%sfk% md5 files\BLE\App\%chip%\%scooter%\App.bin') do if not ["%%m"] == ["!appmd5!"] (
+					@echo.
+					%sfk% tell [red]Error^^![def] download does not match expected md5sum
+					@echo.
+					if exist "files\BLE\App\%chip%\%scooter%\App.bin" del "files\BLE\App\%chip%\%scooter%\App.bin"
+					pause
+					goto :MIDUSELCHI
+				)
+				%sfk% tell [green]md5sum verified
 				@echo.
 				@echo Download successful
 				@echo Thank^'s to !appref! ^<3
 				@echo.
 				pause
-			
+		REM end if not exist App	
 		)
 
 		if not exist "%bootFile%" (
 			
 			if "%scooter%" == "1s" (
-				set "bootURL=https://github.com/CamiAlfa/stlink_m365_BLE/raw/master/flashing/bootldr.bin
+				set "bootURL=https://github.com/CamiAlfa/stlink_m365_BLE/raw/master/flashing/bootldr.bin"
 				set "bootref=CamiAlfa"
+				set "bootmd5=a4b799104eca2744bb4147b534ff0533"
 			)
 			if "%scooter%" == "Pro2" (
-				set "bootURL=https://github.com/CamiAlfa/stlink_m365_BLE/raw/master/flashing/bootldr.bin
-
+				set "bootURL=https://github.com/CamiAlfa/stlink_m365_BLE/raw/master/flashing/bootldr.bin"
 				set "bootref=CamiAlfa"
+				set "bootmd5=a4b799104eca2744bb4147b534ff0533"
 			)
 			if "%scooter%" == "Mi3" (
-				set "bootURL=https://github.com/CamiAlfa/stlink_m365_BLE/raw/master/flashing/bootldr.bin
+				set "bootURL=https://github.com/CamiAlfa/stlink_m365_BLE/raw/master/flashing/bootldr.bin"
 				set "bootref=CamiAlfa"
+				set "bootmd5=a4b799104eca2744bb4147b534ff0533"
 			)
 			if "%scooter%" == "m365" (
-				set "bootURL=https://files.scooterhacking.org/firmware/m365/BLE/blebootloader.hex
+				set "bootURL=https://files.scooterhacking.org/firmware/m365/BLE/blebootloader.hex"
 				set "bootref=ScooterHacking.org"
+				set "bootmd5=bb186e84b057a50f5f208c07624602f3"
 			)
 			if "%scooter%" == "Pro" (
-				set "bootURL=https://files.scooterhacking.org/firmware/m365/BLE/blebootloader.hex
+				set "bootURL=https://files.scooterhacking.org/firmware/m365/BLE/blebootloader.hex"
 				set "bootref=ScooterHacking.org"
+				set "bootmd5=bb186e84b057a50f5f208c07624602f3"
 			)
 			
 			@echo.
@@ -341,17 +364,27 @@ if "%action%" == "Downgrade  " (
 				call :MIDUDOWN "!bootURL!" "%bootFile%"
 				if not exist "%bootFile%" (
 					@echo.
-					@echo ERROR^! could not download file
+					%sfk% tell [red]Error^^![def] could not download file
 					@echo.
 					pause
 					goto :MIDUSELCHI
 				)
+				@echo verifying md5sum
+				for /f %%m in ('%sfk% md5 %bootFile%') do if not ["%%m"] == ["!bootmd5!"] (
+					@echo.
+					%sfk% tell [red]Error^^![def] download does not match expected md5sum
+					@echo.
+					if exist "%bootFile%" del "%bootFile%"
+					pause
+					goto :MIDUSELCHI
+				)
+				%sfk% tell [green] md5sum verified
 				@echo.
 				@echo Download successful
 				@echo Thank^'s to !bootref! ^<3
 				@echo.
 				pause
-			
+		REM end if not exist Bootloader	
 		)	
 	
 		call :MIDUHEAD
@@ -374,8 +407,8 @@ if "%action%" == "Downgrade  " (
 		@echo.
 		pause
 		@echo.
-		@echo Connect wires to Dashboard now, you have 40 seconds to do so...
-		set "Msleep=40"
+		@echo Connect wires to Dashboard now, you have 30 seconds to do so...
+		set "Msleep=30"
 		call :MIDUSLEEP
 		
 		call :MIDUHEAD
@@ -383,17 +416,19 @@ if "%action%" == "Downgrade  " (
 		set "OCDiofle=..\\0x10001000_nrf51_UICR_%mydate%_%mytime%.bin"
 		set "OCDsofst=0x10001000"
 		set "OCDleng=0x400"
-		@echo dumping UICR now
+		@echo establishing first connection
 		call :OCDINIT
+		%sfk% tell [blue]Connected
+		@echo dumping UICR now
 		call :OCDDUMP
-		@echo done
+		%sfk% tell [green]Done
 		set "OCDiofle=..\\0x10000000_nrf51_FICR_%mydate%_%mytime%.bin"
 		set "OCDsofst=0x10000000"
 		set "OCDleng=0x400"
 		@echo dumping FICR now
 		call :OCDINIT
 		call :OCDDUMP
-		@echo done
+		%sfk% tell [green]Done
 		for /f %%h in ('%sfk% hexdump -nofile -pure -offlen 0x00000004 0x00000004 ..\\"0x10001000_nrf51_UICR_%mydate%_%mytime%.bin"') do set "CRP=%%h" >NUL
 		if not "!CRP!" == "FFFFFFFF" (
 			set "EXPofst=0x0003B800"
@@ -403,7 +438,7 @@ if "%action%" == "Downgrade  " (
 			call :OCDINIT
 			call :OCDEXPDUMP
 			move "EXP_DUMP.bin" "..\\0x0003B800_nrf51_app_config.bin" >NUL
-			@echo done
+			%sfk% tell [green]Done
 		) else (
 		set "OCDiofle=..\\0x0003B800_nrf51_app_config.bin"
 		set "OCDsofst=0x0003B800"
@@ -411,7 +446,7 @@ if "%action%" == "Downgrade  " (
 		@echo Dumping app_config ^(your blt-id^) now
 		call :OCDINIT
 		call :OCDDUMP
-		@echo done
+		%sfk% tell [green]Done
 		)
 		cd..
 		for /f %%h in ('Resource\%sfk% hexdump -nofile -flat -offlen 0x00000083 0x00000013 0x0003B800_nrf51_app_config.bin') do set "bltid=%%h" >NUL
@@ -424,14 +459,14 @@ if "%action%" == "Downgrade  " (
 		@echo performing N51x mass erase now
 		call :OCDINIT
 		call :OCDERASE
-		@echo done
+		%sfk% tell [green]Done
 		
 		set "OCDiofle=files/BLE/Softdevice/s130_nrf51_2.0.1_softdevice.hex"
 		set "OCDsofst=" REM 0x00000000
 		@echo writing 1s^/Pro2^/Mi3 softdevice s130 now
 		call :OCDINIT
 		call :OCDWRITE
-		@echo done
+		%sfk% tell [green]Done
 		
 		if "!spoofed!" == "true" (
 			set "OCDiofle=files/BLE/App/%chip%/%scooter%/AppSpoofed.bin"
@@ -443,28 +478,28 @@ if "%action%" == "Downgrade  " (
 		set "OCDsofst=0x0001B000"
 		call :OCDINIT
 		call :OCDWRITE
-		@echo done
+		%sfk% tell [green]Done
 		
 		set "OCDiofle=..\\0x0003B800_nrf51_app_config_!bltid!.bin"
 		set "OCDsofst=0x0003B800"
 		@echo writing %scooter% app_config ^(your blt-id^) now
 		call :OCDINIT
 		call :OCDWRITE
-		@echo done
+		%sfk% tell [green]Done
 				
 		set "OCDiofle=files/BLE/Bootloader/Bootloader_1s_Pro2_Mi3.bin"
 		set "OCDsofst=0x0003D000"
 		@echo writing 1s^/Pro2^/Mi3 bootloader now
 		call :OCDINIT
 		call :OCDWRITE
-		@echo done
+		%sfk% tell [green]Done
 				
 		set "OCDiofle=files/BLE/Bootloader/UICR_1s_Pro2_Mi3.hex"
 		set "OCDsofst="
 		@echo writing 1s^/Pro2^/Mi3 UICR now
 		call :OCDINIT
 		call :OCDWRITE
-		@echo done
+		%sfk% tell [green]Done
 
 
 	)
@@ -483,14 +518,14 @@ if "%action%" == "Dump Flash " (
 		@echo dumping UICR now
 		call :OCDINIT
 		call :OCDDUMP
-		@echo done
+		%sfk% tell [green]Done
 		set "OCDiofle=..\\0x10000000_nrf51_FICR_%mydate%_%mytime%.bin"
 		set "OCDsofst=0x10000000"
 		set "OCDleng=0x400"
 		@echo dumping FICR now
 		call :OCDINIT
 		call :OCDDUMP
-		@echo done
+		%sfk% tell [green]Done
 
 		for /f %%h in ('%sfk% hexdump -nofile -pure -offlen 0x00000004 0x00000004 ..\\"0x10001000_nrf51_UICR_%mydate%_%mytime%.bin"') do set "CRP=%%h" >NUL
 		if not "!CRP!" == "FFFFFFFF" (
@@ -504,7 +539,7 @@ if "%action%" == "Dump Flash " (
 				call :OCDINIT
 				call :OCDEXPDUMP
 				move "EXP_DUMP.bin" "..\\0x00000000_nrf51_CODE_%mydate%_%mytime%.bin" >NUL
-				@echo done
+				%sfk% tell [green]Done
 			)
 			if "!ERRORLEVEL!" == "2" (
 				goto :MIDUEND
@@ -518,7 +553,7 @@ if "%action%" == "Dump Flash " (
 	@echo dumping CODE now
 	call :OCDINIT
 	call :OCDDUMP
-	@echo done
+	%sfk% tell [green]Done
 		)
 	)
 
@@ -530,7 +565,7 @@ if "%action%" == "Write Flash" (
 
 	
 	if "%OCDtrgt%" == "target/nrf51_S%Aspeed%.cfg" (
-	
+		
 	
 		if "%chip%" == "N51822x" (
 		
@@ -539,22 +574,27 @@ if "%action%" == "Write Flash" (
 				if "%scooter%" == "1s" (
 					set "appURL=https://files.scooterhacking.org/firmware/1s/BLE/BLE134.bin"
 					set "appref=ScooterHacking.org"
+					set "appmd5=35c96f1d83d97dc4bb842afcf030d8fe"
 				)
 				if "%scooter%" == "Pro2" (
 					set "appURL=https://files.scooterhacking.org/firmware/pro2/BLE/BLE134.bin"
 					set "appref=ScooterHacking.org"
+					set "appmd5=b3c9023a0c7d89fbad0bf3f0dcc3cc0f"
 				)
 				if "%scooter%" == "Mi3" (
 					set "appURL=https://files.scooterhacking.org/firmware/mi3/BLE/BLE152.bin"
 					set "appref=ScooterHacking.org"
+					set "appmd5=9650da1e091b8c438aea094c25648085"
 				)
 				if "%scooter%" == "m365" (
 					set "appURL=https://files.scooterhacking.org/firmware/m365/BLE/BLE129.bin"
 					set "appref=ScooterHacking.org"
+					set "appmd5=f5aade9096ac0a2c99dae79a4849aa98"
 				)
 				if "%scooter%" == "Pro" (
 					set "appURL=https://files.scooterhacking.org/firmware/pro/BLE/BLE122.bin"
 					set "appref=ScooterHacking.org"
+					set "appmd5=e8880676338e0a94cb8fb5f65b629d61"
 				)
 				
 				@echo No BLE firmware file found
@@ -568,40 +608,55 @@ if "%action%" == "Write Flash" (
 				call :MIDUDOWN "!appURL!" "files\BLE\App\%chip%\%scooter%\App.bin"
 				if not exist "files\BLE\App\%chip%\%scooter%\App.bin" (
 					@echo.
-					@echo ERROR^! could not download file
+					%sfk% tell [red]Error^^![def] could not download file
 					@echo.
 					pause
 					goto :MIDUSELCHI
 				)
+				@echo verifying md5sum
+				for /f %%m in ('%sfk% md5 files\BLE\App\%chip%\%scooter%\App.bin') do if not ["%%m"] == ["!appmd5!"] (
+					@echo.
+					%sfk% tell [red]Error^^![def] download does not match expected md5sum
+					@echo.
+					if exist "files\BLE\App\%chip%\%scooter%\App.bin" del "files\BLE\App\%chip%\%scooter%\App.bin"
+					pause
+					goto :MIDUSELCHI
+				)
+				@echo md5sum verified
 				@echo.
 				@echo Download successful
 				@echo Thank^'s to !appref! ^<3
 				@echo.
 				pause
-			
+			REM end if not exist App	
 			)
 
 			if not exist "%bootFile%" (
 			
 				if "%scooter%" == "1s" (
-					set "bootURL=https://github.com/CamiAlfa/stlink_m365_BLE/raw/master/flashing/bootldr.bin
+					set "bootURL=https://github.com/CamiAlfa/stlink_m365_BLE/raw/master/flashing/bootldr.bin"
 					set "bootref=CamiAlfa"
+					set "bootmd5=a4b799104eca2744bb4147b534ff0533"
 				)
 				if "%scooter%" == "Pro2" (
-					set "bootURL=https://github.com/CamiAlfa/stlink_m365_BLE/raw/master/flashing/bootldr.bin
+					set "bootURL=https://github.com/CamiAlfa/stlink_m365_BLE/raw/master/flashing/bootldr.bin"
 					set "bootref=CamiAlfa"
+					set "bootmd5=a4b799104eca2744bb4147b534ff0533"
 				)
 				if "%scooter%" == "Mi3" (
-					set "bootURL=https://github.com/CamiAlfa/stlink_m365_BLE/raw/master/flashing/bootldr.bin
+					set "bootURL=https://github.com/CamiAlfa/stlink_m365_BLE/raw/master/flashing/bootldr.bin"
 					set "bootref=CamiAlfa"
+					set "bootmd5=a4b799104eca2744bb4147b534ff0533"
 				)
 				if "%scooter%" == "m365" (
-					set "bootURL=https://files.scooterhacking.org/firmware/m365/BLE/blebootloader.hex
+					set "bootURL=https://files.scooterhacking.org/firmware/m365/BLE/blebootloader.hex"
 					set "bootref=ScooterHacking.org"
+					set "bootmd5=bb186e84b057a50f5f208c07624602f3"
 				)
 				if "%scooter%" == "Pro" (
-					set "bootURL=https://files.scooterhacking.org/firmware/m365/BLE/blebootloader.hex
+					set "bootURL=https://files.scooterhacking.org/firmware/m365/BLE/blebootloader.hex"
 					set "bootref=ScooterHacking.org"
+					set "bootmd5=bb186e84b057a50f5f208c07624602f3"
 				)
 			
 				@echo.
@@ -616,18 +671,28 @@ if "%action%" == "Write Flash" (
 				call :MIDUDOWN "!bootURL!" "%bootFile%"
 				if not exist "%bootFile%" (
 					@echo.
-					@echo ERROR^! could not download file
+					%sfk% tell [red]Error^^![def] could not download file
 					@echo.
 					pause
 					goto :MIDUSELCHI
 				)
+				@echo verifying md5sum
+				for /f %%m in ('%sfk% md5 %bootFile%') do if not ["%%m"] == ["!bootmd5!"] (
+					@echo.
+					%sfk% tell [red]Error^^![def] download does not match expected md5sum
+					@echo.
+					if exist "%bootFile%" del "%bootFile%"
+					pause
+					goto :MIDUSELCHI
+				)
+				@echo md5sum verified
 				@echo.
 				@echo Download successful
 				@echo Thank^'s to !bootref! ^<3
 				@echo.
 				pause
-			
-			)
+			REM end if not exist Bootloader	
+			)	
 		REM end if chip
 		) 
 	
@@ -636,7 +701,7 @@ if "%action%" == "Write Flash" (
 		@echo performing N51x mass erase now
 		call :OCDINIT
 		call :OCDERASE
-		@echo done
+		%sfk% tell [green]Done
 		
 		if "%scooter%" == "1s" (
 			set "OCDiofle=files/BLE/Softdevice/s130_nrf51_2.0.1_softdevice.hex"
@@ -644,28 +709,28 @@ if "%action%" == "Write Flash" (
 			@echo writing 1s^/Pro2 softdevice s130 now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 			
 			set "OCDiofle=files/BLE/App/%chip%/%scooter%/App.bin"
 			set "OCDsofst=0x0001B000"
 			@echo writing %scooter% App aka BLE now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 			
 			set "OCDiofle=files/BLE/Bootloader/Bootloader_1s_Pro2_Mi3.bin"
 			set "OCDsofst=0x0003D000"
 			@echo writing 1s^/Pro2 bootloader now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 			
 			set "OCDiofle=files/BLE/Bootloader/UICR_1s_Pro2_Mi3.hex"
 			set "OCDsofst="
 			@echo writing 1s^/Pro2 UICR now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 		)
 		REM ------------------
 		if "%scooter%" == "Pro2" (
@@ -674,28 +739,28 @@ if "%action%" == "Write Flash" (
 			@echo writing 1s^/Pro2 softdevice s130 now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 			
 			set "OCDiofle=files/BLE/App/%chip%/%scooter%/App.bin"
 			set "OCDsofst=0x0001B000"
 			@echo writing %scooter% App aka BLE now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done	
+			%sfk% tell [green]Done	
 			
 			set "OCDiofle=files/BLE/Bootloader/Bootloader_1s_Pro2_Mi3.bin"
 			set "OCDsofst=0x0003D000"
 			@echo writing 1s^/Pro2 bootloader now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 			
 			set "OCDiofle=files/BLE/Bootloader/UICR_1s_Pro2_Mi3.hex"
 			set "OCDsofst="
 			@echo writing 1s^/Pro2 UICR now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 		)
 		REM ------------------
 		if "%scooter%" == "Mi3" (
@@ -704,28 +769,28 @@ if "%action%" == "Write Flash" (
 			@echo writing 1s^/Pro2^/Mi3 softdevice s130 now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 			
 			set "OCDiofle=files/BLE/App/%chip%/%scooter%/App.bin"
 			set "OCDsofst=0x0001B000"
 			@echo writing %scooter% App aka BLE now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 			
 			set "OCDiofle=files/BLE/Bootloader/Bootloader_1s_Pro2_Mi3.bin"
 			set "OCDsofst=0x0003D000"
 			@echo writing 1s^/Pro2^/Mi3 bootloader now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 			
 			set "OCDiofle=files/BLE/Bootloader/UICR_1s_Pro2_Mi3.hex"
 			set "OCDsofst="
 			@echo writing 1s^/Pro2^/Mi3 UICR now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 		)
 		REM ------------------
 		if "%scooter%" == "m365" (
@@ -734,21 +799,21 @@ if "%action%" == "Write Flash" (
 			@echo writing m365^/Pro softdevice s110 now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 				
 			set "OCDiofle=files/BLE/App/%chip%/%scooter%/App.bin"
 			set "OCDsofst=0x00018000"
 			@echo writing %scooter% App aka BLE now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 			
 			set "OCDiofle=files/BLE/Bootloader/Bootloader_m365_Pro.hex"
 			set "OCDsofst=" REM 0x0003C000
 			@echo writing m365^/Pro bootloader and UICR now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 		)
 		REM ------------------
 		if "%scooter%" == "Pro" (
@@ -757,21 +822,21 @@ if "%action%" == "Write Flash" (
 			@echo writing m365^/Pro softdevice s110 now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 			
 			set "OCDiofle=files/BLE/App/%chip%/%scooter%/App.bin"
 			set "OCDsofst=0x00018000"
 			@echo writing %scooter% App aka BLE now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 			
 			set "OCDiofle=files/BLE/Bootloader/Bootloader_m365_Pro.hex"
 			set "OCDsofst=" REM 0x0003C000
 			@echo writing m365^/Pro bootloader and UICR now
 			call :OCDINIT
 			call :OCDWRITE
-			@echo done
+			%sfk% tell [green]Done
 		)
 		
 		
@@ -824,14 +889,14 @@ if "%veroffset%" == "" (
 	for /f %%f in ('%sfk% xhexfind "files\BLE\App\%chip%\%scooter%\App.bin" -firsthit "/[1 byte]\x21\x01\x71\x00/" +filt -+0x "-line=1" -replace "_files\BLE\App\%chip%\%scooter%\App.bin : hit at offset __" -replace "_ len 5__"') do @set veroffset=%%f	
 )
 if "%veroffset%" == "" (
-	@echo ERROR^! can not find version to spoof
-	@echo %0 %mydate%_%mytime% ERROR^! can not find version to spoof in "files\BLE\App\%chip%\%scooter%\App.bin" >>MiDu.log
+	%sfk% tell [red]Error^^![def] can not find version to spoof
+	@echo %0 %mydate%_%mytime% ERROR^^! can not find version to spoof in "files\BLE\App\%chip%\%scooter%\App.bin" >>MiDu.log
 	set "spoofed=false"
 ) else (
 copy "files\BLE\App\%chip%\%scooter%\App.bin" "files\BLE\App\%chip%\%scooter%\AppSpoofed.bin" >NUL
 %sfk% setbytes "files\BLE\App\%chip%\%scooter%\AppSpoofed.bin" %veroffset% 0x%spoofto%21017101 -yes >NUL
 set "spoofed=true"
-@echo done, spoofed successfully to 1%spoofto%
+%sfk% tell [green]Done[def] spoofed successfully to 1%spoofto%
 @echo %0 %mydate%_%mytime% done, spoofed successfully "files\BLE\App\%chip%\%scooter%\AppSpoofed.bin" to 1%spoofto% at offset=%veroffset% >>MiDu.log
 )
 
@@ -880,19 +945,19 @@ REM ------------------------MiDu---------------------------
 set "connected=false" & start bin\PlaySound.exe files\Audio\error.wav
 set "writing=false"
 set /a errors+=1
-set /a "errorl1=10"
+set /a "errorl1=5"
 set /a "errorl2=20"
 call :MIDUMYDT
 
 if "%1" == ":OCDRESET" (
-	@echo ERROR^! there might be something wrong with the device firmware,
+	%sfk% tell [red]Error^^![def] there might be something wrong with the device firmware,
 	@echo         either no connection, or no reset possible
 	@echo         current adapter speed=%Aspeed%, there have been %errors% errors occured 
 	@echo         retry in 5 Seconds
 	@echo ERROR %1 %mydate%_%mytime% no Connection, errors=%errors% speed=%Aspeed% >>MiDu.log
 	@echo. >>MiDu.log
 ) else (
-	@echo ERROR^! No connection, adapter speed=%Aspeed% retry in 5 Seconds
+	%sfk% tell [red]Error^^![def] No connection, adapter speed=%Aspeed% retry in 5 Seconds
 	@echo ERROR %1 %mydate%_%mytime% no Connection, errors=%errors% speed=%Aspeed% >>MiDu.log
 	@echo. >>MiDu.log
 )
@@ -1040,7 +1105,7 @@ cls
 @echo  *                      powered by OpenOCD                               *
 @echo  *                      created by VooDooShamane                         *
 @echo  *                      support Rollerplausch.com                        *
-@echo  *                                                                v1.0.3 *
+@echo  *                                                                v1.0.4 *
 @echo  *************************************************************************
 @echo  -------------------------------------------------------------------------
 @echo  ^| Target=%device% ^| Action=%action% ^| Scooter=%UIscooter% ^| Chip=%UIchip% ^|
