@@ -451,6 +451,16 @@ if "%action%" == "Downgrade  " (
 		cd..
 		for /f %%h in ('Resource\%sfk% hexdump -nofile -flat -offlen 0x00000083 0x00000013 0x0003B800_nrf51_app_config.bin') do set "bltid=%%h" >NUL
 		cd Resource
+		if not "!bltid:~0,3!" == "blt" (
+		start bin\PlaySound.exe files\Audio\error.wav
+		@echo.
+		%sfk% tell [red]ERROR no blt-id found
+		@echo Aborting downgrade now
+		@echo If you are feeling adventurous, try the "write flash" function
+		@echo.
+		pause
+		exit
+		)
 		@echo.
 		@echo Your blt-id ^= !bltid!
 		@echo.
@@ -1105,7 +1115,7 @@ cls
 @echo  *                      powered by OpenOCD                               *
 @echo  *                      created by VooDooShamane                         *
 @echo  *                      support Rollerplausch.com                        *
-@echo  *                                                                v1.0.4 *
+@echo  *                                                                v1.0.5 *
 @echo  *************************************************************************
 @echo  -------------------------------------------------------------------------
 @echo  ^| Target=%device% ^| Action=%action% ^| Scooter=%UIscooter% ^| Chip=%UIchip% ^|
